@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -ne 1 ]] then
+if [[ $# -ne 1 ]]; then
     printf 'Usage: %s <project-directory>\n' "$0" >&2
     exit 1
 fi
@@ -10,21 +10,12 @@ project_dir="$1"
 mkdir -- "$project_dir"
 cd -- "$project_dir"
 
-mkdir build src test
+mkdir build src tests
 
-mkdir -p test/extern
+mkdir -p tests/extern
 
-wget -O test/extern/doctest.h \
+wget -O tests/extern/doctest.h \
     https://raw.githubusercontent.com/doctest/doctest/v2.4.11/doctest/doctest.h
-
-cat > CMakeLists.txt<<'EOF'
-add_library(doctest INTERFACE)
-
-target_include_directories(doctest INTERFACE
-    ${PROJECT_SOURCE_DIR}/tests/extern/doctest
-)
-EOF
-
 
 cat > CMakeLists.txt <<'EOF'
 cmake_minimum_required(VERSION 3.20)
@@ -35,7 +26,6 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-enable_testing()
 include(CTest)
 
 if(BUILD_TESTING)
@@ -50,6 +40,14 @@ set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cmake --build build
+EOF
+
+cat > tests/CMakeLists.txt<<'EOF'
+add_library(doctest INTERFACE)
+
+target_include_directories(doctest INTERFACE
+    ${PROJECT_SOURCE_DIR}/tests/extern
+)
 EOF
 
 cat > run_test.sh <<'EOF'
