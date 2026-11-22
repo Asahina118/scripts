@@ -28,9 +28,26 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(CTest)
 
+add_executable("${project_name}"
+    src/main.cpp
+)
+
+target_include_directories("${project_name}" PUBLIC
+        ${PROJECT_SOURCE_DIR}
+)
+
 if(BUILD_TESTING)
     add_subdirectory(tests test)
 endif()
+EOF
+
+cat > src/main.cpp <<'EOF'
+#include <cstdlib>
+
+int main()
+{
+    return EXIT_SUCCESS;
+}
 EOF
 
 cat > build.sh <<'EOF'
@@ -46,8 +63,26 @@ cat > tests/CMakeLists.txt<<'EOF'
 add_library(doctest INTERFACE)
 
 target_include_directories(doctest INTERFACE
-    ${PROJECT_SOURCE_DIR}/tests/extern
+    ${PROJECT_SOURCE_DIR}
 )
+
+add_executable(example    
+    ${PROJECT_SOURCE_DIR}/tests/example.cpp
+)
+
+target_link_libraries(example PRIVATE
+    doctest
+)
+
+target_compile_definitions(example PRIVATE
+    DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+)
+
+set_target_properties(example PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
+)
+
+add_test(NAME example COMMAND example)
 EOF
 
 cat > run_test.sh <<'EOF'
@@ -60,6 +95,15 @@ ctest --test-dir build --verbose
 EOF
 
 chmod +x build.sh run_test.sh
+
+cat > tests/example.cpp<<'EOF'
+#include "tests/extern/doctest.h"
+
+TEST_CASE("example")
+{
+    CHECK(2 + 2 == 4);
+}
+EOF
 
 cat > .gitignore <<'EOF'
 /build/
